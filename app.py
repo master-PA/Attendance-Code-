@@ -113,6 +113,33 @@ def login():
     flash("Invalid credentials")
     return redirect(url_for("index"))
 
+@app.route("/teacher", methods=["GET", "POST"])
+def teacher_dashboard():
+    if session.get("role") != "teacher":
+        return redirect(url_for("index"))
+
+    conn = get_db()
+    c = conn.cursor()
+
+    teacher_id = session["user"]  # logged-in teacher’s ID
+    c.execute("SELECT id, class_name FROM classes WHERE teacher_id=?", (teacher_id,))
+    classes = c.fetchall()
+
+    otp_info = None
+
+    if request.method == "POST" and "generate_otp" in request.form:
+        class_id = request.form["class"]
+        timer = int(request.form["timer"])
+        code = generate_otp()
+        expires_at = datetime.datetime.now() + datetime.timedelta(seconds=timer)
+
+        c.execute("INSERT INTO otps (class_id, code, expires_at) VALUES (?, ?, ?)",
+                  (class_id, code, expires_at))
+        conn.commit()
+        otp_info = {"code": code, "expires_at": expires_at}
+
+    conn.close()
+    return render_template("teacher.html", classes=classes, otp_info=otp_info)
 
 
 # ---------- Teacher ----------
