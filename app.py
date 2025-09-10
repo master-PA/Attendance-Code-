@@ -81,39 +81,46 @@ def index():
 
 
 # ---------- Login ----------
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    username = request.form["username"]
-    password = request.form["password"]
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        role = request.form["role"]
 
-    conn = get_db()
-    c = conn.cursor()
+        conn = get_db()
+        c = conn.cursor()
+        user = None
 
-    # Teacher login
-    c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
-    teacher = c.fetchone()
-    if teacher:
-        session["user"] = teacher[0]
-        session["role"] = "teacher"
-        return redirect(url_for("teacher_dashboard"))
+        if role == "admin":
+            c.execute("SELECT * FROM admins WHERE username=? AND password=?", (username, password))
+            user = c.fetchone()
+        elif role == "teacher":
+            c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
+            user = c.fetchone()
+        elif role == "student":
+            c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
+            user = c.fetchone()
 
-    # Student login
-    c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
-    student = c.fetchone()
-    if student:
-        session["user"] = student[0]
-        session["role"] = "student"
-        return redirect(url_for("student_dashboard"))
+        conn.close()
 
-    # Admin login (hardcoded for demo)
-    if username == "admin" and password == "admin":
-        session["role"] = "admin"
-        return redirect(url_for("admin_dashboard"))
+        if user:
+            session["user"] = user[0]
+            session["role"] = role
+            if role == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif role == "teacher":
+                return redirect(url_for("teacher_dashboard"))
+            elif role == "student":
+                return redirect(url_for("student_dashboard"))
+        else:
+            flash("❌ Invalid credentials. Please try again.")
+            return redirect(url_for("login"))
 
-    flash("Invalid credentials")
-    return redirect(url_for("index"))
+    return render_template("login.html")
 
 
+# ---------- Teacher ----------
 @app.route("/teacher", methods=["GET", "POST"])
 def teacher_dashboard():
     if session.get("role") != "teacher":
@@ -122,8 +129,8 @@ def teacher_dashboard():
     conn = get_db()
     c = conn.cursor()
 
-    teacher_id = session["user"]
-    c.execute("SELECT * FROM classes WHERE teacher_id=?", (teacher_id,))
+    teacher_id = session["user"]  # logged-in teacher’s ID
+    c.execute("SELECT id, class_name FROM classes WHERE teacher_id=?", (teacher_id,))
     classes = c.fetchall()
 
     otp_info = None
@@ -141,8 +148,7 @@ def teacher_dashboard():
 
     conn.close()
     return render_template("teacher.html", classes=classes, otp_info=otp_info)
-
-
+    
 # ---------- Student ----------
 @app.route("/student", methods=["GET", "POST"])
 def student_dashboard():
