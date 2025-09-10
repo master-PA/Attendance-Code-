@@ -81,45 +81,38 @@ def index():
 
 
 # ---------- Login ----------
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["POST"])
 def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    username = request.form["username"]
+    password = request.form["password"]
 
-        conn = get_db()
-        c = conn.cursor()
+    conn = get_db()
+    c = conn.cursor()
 
-        # First check admin
-        c.execute("SELECT * FROM admins WHERE username=? AND password=?", (username, password))
-        user = c.fetchone()
-        if user:
-            session["user"] = user[0]
-            session["role"] = "admin"
-            return redirect(url_for("admin_dashboard"))
+    # Teacher login
+    c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
+    teacher = c.fetchone()
+    if teacher:
+        session["user"] = teacher[0]
+        session["role"] = "teacher"
+        return redirect(url_for("teacher_dashboard"))
 
-        # Then check teacher
-        c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
-        user = c.fetchone()
-        if user:
-            session["user"] = user[0]
-            session["role"] = "teacher"
-            return redirect(url_for("teacher_dashboard"))
+    # Student login
+    c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
+    student = c.fetchone()
+    if student:
+        session["user"] = student[0]
+        session["role"] = "student"
+        return redirect(url_for("student_dashboard"))
 
-        # Then check student
-        c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
-        user = c.fetchone()
-        if user:
-            session["user"] = user[0]
-            session["role"] = "student"
-            return redirect(url_for("student_dashboard"))
+    # Admin login (hardcoded for demo)
+    if username == "admin" and password == "admin":
+        session["role"] = "admin"
+        return redirect(url_for("admin_dashboard"))
 
-        conn.close()
+    flash("Invalid credentials")
+    return redirect(url_for("index"))
 
-        flash("❌ Invalid credentials. Please try again.")
-        return redirect(url_for("login"))
-
-    return render_template("login.html")
 
 
 # ---------- Teacher ----------
