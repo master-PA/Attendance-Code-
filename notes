@@ -9,3 +9,6 @@ login page
 |
 |--(admin interface)-- add student,add class,add teacher
 
+use flask , html , css ,sqlite
+the will be deployed on github
+
