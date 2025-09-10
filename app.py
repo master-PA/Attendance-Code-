@@ -86,36 +86,38 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        role = request.form.get("role")
 
         conn = get_db()
         c = conn.cursor()
-        user = None
 
-        if role == "admin":
-            c.execute("SELECT * FROM admins WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
-        elif role == "teacher":
-            c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
-        elif role == "student":
-            c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
+        # First check admin
+        c.execute("SELECT * FROM admins WHERE username=? AND password=?", (username, password))
+        user = c.fetchone()
+        if user:
+            session["user"] = user[0]
+            session["role"] = "admin"
+            return redirect(url_for("admin_dashboard"))
+
+        # Then check teacher
+        c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
+        user = c.fetchone()
+        if user:
+            session["user"] = user[0]
+            session["role"] = "teacher"
+            return redirect(url_for("teacher_dashboard"))
+
+        # Then check student
+        c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
+        user = c.fetchone()
+        if user:
+            session["user"] = user[0]
+            session["role"] = "student"
+            return redirect(url_for("student_dashboard"))
 
         conn.close()
 
-        if user:
-            session["user"] = user[0]
-            session["role"] = role
-            if role == "admin":
-                return redirect(url_for("admin_dashboard"))
-            elif role == "teacher":
-                return redirect(url_for("teacher_dashboard"))
-            elif role == "student":
-                return redirect(url_for("student_dashboard"))
-        else:
-            flash("❌ Invalid credentials. Please try again.")
-            return redirect(url_for("login"))
+        flash("❌ Invalid credentials. Please try again.")
+        return redirect(url_for("login"))
 
     return render_template("login.html")
 
