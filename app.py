@@ -86,7 +86,7 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        role = request.form["role"]
+        role = request.form.get("role")
 
         conn = get_db()
         c = conn.cursor()
