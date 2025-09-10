@@ -20,6 +20,10 @@
             <input type="number" name="timer" min="10" max="60" required>
             <button type="submit">Generate OTP</button>
         </form>
+        {% if otp_info %}
+            <p><b>OTP Code:</b> {{ otp_info.code }}</p>
+            <p><b>Expires At:</b> {{ otp_info.expires_at }}</p>
+        {% endif %}
     </div>
 </body>
 </html>
