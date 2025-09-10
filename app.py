@@ -114,7 +114,6 @@ def login():
     return redirect(url_for("index"))
 
 
-# ---------- Teacher ----------
 @app.route("/teacher", methods=["GET", "POST"])
 def teacher_dashboard():
     if session.get("role") != "teacher":
@@ -129,7 +128,7 @@ def teacher_dashboard():
 
     otp_info = None
 
-    if request.method == "POST":
+    if request.method == "POST" and "generate_otp" in request.form:
         class_id = request.form["class"]
         timer = int(request.form["timer"])
         code = generate_otp()
@@ -219,10 +218,14 @@ def admin_dashboard():
     teachers = c.fetchall()
     c.execute("SELECT * FROM classes")
     classes = c.fetchall()
-    c.execute("SELECT * FROM students")
-    students = c.fetchall()
-    conn.close()
 
+    # fetch students with their class name
+    c.execute("""SELECT students.id, students.name, students.username, classes.class_name
+                 FROM students
+                 LEFT JOIN classes ON students.class_id = classes.id""")
+    students = c.fetchall()
+
+    conn.close()
     return render_template("admin.html", teachers=teachers, classes=classes, students=students)
 
 

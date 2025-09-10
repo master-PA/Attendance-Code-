@@ -74,7 +74,7 @@
         <h3>Students</h3>
         <ul>
             {% for s in students %}
-                <li>{{ s[1] }} ({{ s[2] }})</li>
+                <li>{{ s[1] }} ({{ s[2] }}) - Class: {{ s[3] if s[3] else "No Class Assigned" }}</li>
             {% endfor %}
         </ul>
     </div>
