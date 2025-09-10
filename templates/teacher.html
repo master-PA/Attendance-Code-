@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h3>Teacher Dashboard</h3>
+        <form method="post">
+            <label for="class">Select Class:</label>
+            <select name="class">
+                {% for class in classes %}
+                    <option value="{{ class['id'] }}">{{ class['class_name'] }}</option>
+                {% endfor %}
+            </select>
+            <label for="timer">Timer (seconds):</label>
+            <input type="number" name="timer" min="10" max="60" required>
+            <button type="submit">Generate OTP</button>
+        </form>
+    </div>
+</body>
+</html>
