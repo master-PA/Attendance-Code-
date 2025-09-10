@@ -8,21 +8,112 @@
 </head>
 <body>
     <div class="card">
-        <h3>Teacher Dashboard</h3>
-        <form method="post">
-            <label for="class">Select Class:</label>
-            <select name="class">
+        <h2>Teacher Dashboard</h2>
+        <a href="/logout"><button>Logout</button></a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+            {% for message in messages %}
+                <p style="color:red;">{{ message }}</p>
+            {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- OTP Section -->
+    <div class="card">
+        <h3>Generate OTP</h3>
+        <form method="post" action="/teacher">
+            <label>Select Class:</label>
+            <select name="class" required>
                 {% for class in classes %}
-                    <option value="{{ class['id'] }}">{{ class['class_name'] }}</option>
+                    <option value="{{ class[0] }}">{{ class[1] }}</option>
                 {% endfor %}
             </select>
-            <label for="timer">Timer (seconds):</label>
+            <label>Timer (seconds):</label>
             <input type="number" name="timer" min="10" max="60" required>
-            <button type="submit">Generate OTP</button>
+            <button type="submit" name="generate_otp">Generate OTP</button>
         </form>
+
         {% if otp_info %}
             <p><b>OTP Code:</b> {{ otp_info.code }}</p>
             <p><b>Expires At:</b> {{ otp_info.expires_at }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Manual Attendance Section -->
+    <div class="card">
+        <h3>Mark Attendance Manually</h3>
+        <form method="post" action="/teacher/mark_attendance">
+            <label>Select Class:</label>
+            <select name="class_id" required onchange="this.form.submit()">
+                <option value="">-- Select Class --</option>
+                {% for class in classes %}
+                    <option value="{{ class[0] }}"
+                        {% if selected_class and selected_class == class[0] %}selected{% endif %}>
+                        {{ class[1] }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        {% if students %}
+        <form method="post" action="/teacher/save_attendance">
+            <input type="hidden" name="class_id" value="{{ selected_class }}">
+            <table>
+                <tr>
+                    <th>Student</th>
+                    <th>Status</th>
+                </tr>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student[1] }}</td>
+                    <td>
+                        <select name="status_{{ student[0] }}">
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <button type="submit">Save Attendance</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- View Attendance Section -->
+    <div class="card">
+        <h3>View Attendance</h3>
+        <form method="post" action="/teacher/view_attendance">
+            <label>Select Class:</label>
+            <select name="class_id" required>
+                {% for class in classes %}
+                    <option value="{{ class[0] }}">{{ class[1] }}</option>
+                {% endfor %}
+            </select>
+            <label>Date:</label>
+            <input type="date" name="date" value="{{ today }}" required>
+            <button type="submit">View</button>
+        </form>
+
+        {% if attendance_records %}
+        <h4>Attendance for {{ selected_class_name }} on {{ selected_date }}</h4>
+        <table>
+            <tr>
+                <th>Student</th>
+                <th>Status</th>
+            </tr>
+            {% for record in attendance_records %}
+            <tr>
+                <td>{{ record[0] }}</td>
+                <td>{{ record[1] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
         {% endif %}
     </div>
 </body>
