@@ -1,182 +1,241 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, g
-import sqlite3
-import random
-from datetime import datetime, timedelta
-import os
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+import sqlite3, random, string, datetime
 
 app = Flask(__name__)
-app.secret_key = 'random_secret_key'
+app.secret_key = "supersecretkey"   # change this in production
 
-# Database setup
-DB_PATH = 'attendance.db'
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DB_PATH)
-        db.row_factory = sqlite3.Row
-    return db
-
-# Create necessary tables
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
+# ===============================
+# Database Initialization
+# ===============================
+def init_db_function():
+    conn = sqlite3.connect("attendance.db")
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS classes (
-            id INTEGER PRIMARY KEY,
-            class_name TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS students (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            class_id INTEGER,
-            UNIQUE(name, class_id)
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS teachers (
-            id INTEGER PRIMARY KEY,
-            username TEXT,
-            password TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS otp (
-            id INTEGER PRIMARY KEY,
-            code TEXT,
-            class_id INTEGER,
-            expires_at TEXT
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS attendance (
-            id INTEGER PRIMARY KEY,
-            student_id INTEGER,
-            otp_id INTEGER,
-            timestamp TEXT,
-            UNIQUE(student_id, otp_id)
-        )
-    ''')
+
+    # Teachers table
+    c.execute('''CREATE TABLE IF NOT EXISTS teachers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
+                    username TEXT UNIQUE,
+                    password TEXT
+                )''')
+
+    # Classes table
+    c.execute('''CREATE TABLE IF NOT EXISTS classes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_name TEXT,
+                    teacher_id INTEGER,
+                    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
+                )''')
+
+    # Students table
+    c.execute('''CREATE TABLE IF NOT EXISTS students (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
+                    username TEXT UNIQUE,
+                    password TEXT,
+                    class_id INTEGER,
+                    FOREIGN KEY(class_id) REFERENCES classes(id)
+                )''')
+
+    # Attendance table
+    c.execute('''CREATE TABLE IF NOT EXISTS attendance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER,
+                    class_id INTEGER,
+                    date TEXT,
+                    status TEXT,
+                    FOREIGN KEY(student_id) REFERENCES students(id),
+                    FOREIGN KEY(class_id) REFERENCES classes(id)
+                )''')
+
+    # OTP codes table
+    c.execute('''CREATE TABLE IF NOT EXISTS otps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_id INTEGER,
+                    code TEXT,
+                    expires_at DATETIME,
+                    FOREIGN KEY(class_id) REFERENCES classes(id)
+                )''')
+
     conn.commit()
     conn.close()
 
-@app.before_request
-def init_db_once():
-    if not hasattr(app, "db_initialized"):
-        init_db_function()
-        app.db_initialized = True
+
+# ===============================
+# Helper Functions
+# ===============================
+def get_db():
+    return sqlite3.connect("attendance.db")
+
+def generate_otp(length=6):
+    return ''.join(random.choices(string.digits, k=length))
 
 
-# Home/Login Route
-@app.route('/')
+# ===============================
+# Routes
+# ===============================
+@app.route("/")
 def index():
-    return render_template('login.html')
+    return render_template("login.html")
 
-# Teacher Login Route
-@app.route('/login', methods=['GET', 'POST'])
+
+# ---------- Login ----------
+@app.route("/login", methods=["POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        conn = get_db()
-        c = conn.cursor()
-        c.execute('SELECT * FROM teachers WHERE username=? AND password=?', (username, password))
-        teacher = c.fetchone()
-        if teacher:
-            session['teacher'] = teacher['id']
-            return redirect(url_for('teacher_dashboard'))
-        else:
-            flash('Invalid credentials')
-    return redirect(url_for('index'))
+    username = request.form["username"]
+    password = request.form["password"]
 
-# Teacher Dashboard
-@app.route('/teacher/dashboard', methods=['GET', 'POST'])
+    conn = get_db()
+    c = conn.cursor()
+
+    # Teacher login
+    c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
+    teacher = c.fetchone()
+    if teacher:
+        session["user"] = teacher[0]
+        session["role"] = "teacher"
+        return redirect(url_for("teacher_dashboard"))
+
+    # Student login
+    c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
+    student = c.fetchone()
+    if student:
+        session["user"] = student[0]
+        session["role"] = "student"
+        return redirect(url_for("student_dashboard"))
+
+    # Admin login (hardcoded for demo)
+    if username == "admin" and password == "admin":
+        session["role"] = "admin"
+        return redirect(url_for("admin_dashboard"))
+
+    flash("Invalid credentials")
+    return redirect(url_for("index"))
+
+
+# ---------- Teacher ----------
+@app.route("/teacher", methods=["GET", "POST"])
 def teacher_dashboard():
-    if 'teacher' not in session:
-        return redirect(url_for('index'))
-    
+    if session.get("role") != "teacher":
+        return redirect(url_for("index"))
+
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT * FROM classes')
+
+    teacher_id = session["user"]
+    c.execute("SELECT * FROM classes WHERE teacher_id=?", (teacher_id,))
     classes = c.fetchall()
-    if request.method == 'POST':
-        class_id = request.form['class']
-        timer = int(request.form['timer'])
-        code = str(random.randint(100000, 999999))
-        expires_at = datetime.utcnow() + timedelta(seconds=timer)
-        c.execute('INSERT INTO otp (code, class_id, expires_at) VALUES (?, ?, ?)', (code, class_id, expires_at))
-        conn.commit()
-        flash(f'OTP generated: {code} for {timer} seconds')
-        return redirect(url_for('teacher_dashboard'))
-    return render_template('teacher.html', classes=classes)
 
-# Student Interface to Submit OTP
-@app.route('/student', methods=['GET', 'POST'])
-def student():
-    if request.method == 'POST':
-        student_name = request.form['name']
-        otp_code = request.form['otp']
-        conn = get_db()
-        c = conn.cursor()
-        c.execute('SELECT * FROM students WHERE name=?', (student_name,))
-        student = c.fetchone()
-        if not student:
-            flash('Student not found')
-            return redirect(url_for('student'))
-        
-        c.execute('SELECT * FROM otp WHERE code=?', (otp_code,))
-        otp = c.fetchone()
-        if not otp:
-            flash('Invalid OTP')
-            return redirect(url_for('student'))
-        
-        if datetime.utcnow() > datetime.fromisoformat(otp['expires_at']):
-            flash('OTP expired')
-            return redirect(url_for('student'))
-        
-        c.execute('INSERT INTO attendance (student_id, otp_id, timestamp) VALUES (?, ?, ?)', (student['id'], otp['id'], datetime.utcnow()))
-        conn.commit()
-        flash('Attendance marked successfully')
-    return render_template('student.html')
+    otp_info = None
 
-# Admin Interface for Adding Students, Classes, Teachers
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    if 'admin' not in session:
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        if 'add_student' in request.form:
-            name = request.form['student_name']
-            class_id = request.form['class_id']
-            conn = get_db()
-            c = conn.cursor()
-            c.execute('INSERT INTO students (name, class_id) VALUES (?, ?)', (name, class_id))
-            conn.commit()
-            flash('Student added')
-        elif 'add_class' in request.form:
-            class_name = request.form['class_name']
-            conn = get_db()
-            c = conn.cursor()
-            c.execute('INSERT INTO classes (class_name) VALUES (?)', (class_name,))
-            conn.commit()
-            flash('Class added')
-        elif 'add_teacher' in request.form:
-            username = request.form['teacher_username']
-            password = request.form['teacher_password']
-            conn = get_db()
-            c = conn.cursor()
-            c.execute('INSERT INTO teachers (username, password) VALUES (?, ?)', (username, password))
-            conn.commit()
-            flash('Teacher added')
-    
+    if request.method == "POST":
+        class_id = request.form["class"]
+        timer = int(request.form["timer"])
+        code = generate_otp()
+        expires_at = datetime.datetime.now() + datetime.timedelta(seconds=timer)
+
+        c.execute("INSERT INTO otps (class_id, code, expires_at) VALUES (?, ?, ?)",
+                  (class_id, code, expires_at))
+        conn.commit()
+        otp_info = {"code": code, "expires_at": expires_at}
+
+    conn.close()
+    return render_template("teacher.html", classes=classes, otp_info=otp_info)
+
+
+# ---------- Student ----------
+@app.route("/student", methods=["GET", "POST"])
+def student_dashboard():
+    if session.get("role") != "student":
+        return redirect(url_for("index"))
+
+    student_id = session["user"]
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT * FROM students')
-    students = c.fetchall()
-    return render_template('admin.html', students=students)
 
-if __name__ == '__main__':
+    if request.method == "POST":
+        code = request.form["otp"]
+
+        c.execute("SELECT * FROM otps WHERE code=? ORDER BY id DESC LIMIT 1", (code,))
+        otp = c.fetchone()
+        if otp:
+            otp_id, class_id, otp_code, expires_at = otp
+            if datetime.datetime.now() < datetime.datetime.fromisoformat(expires_at):
+                today = datetime.date.today().isoformat()
+                c.execute("INSERT INTO attendance (student_id, class_id, date, status) VALUES (?, ?, ?, ?)",
+                          (student_id, class_id, today, "Present"))
+                conn.commit()
+                flash("Attendance marked successfully!")
+            else:
+                flash("OTP expired!")
+        else:
+            flash("Invalid OTP!")
+
+    # show attendance history
+    c.execute("""SELECT date, status FROM attendance 
+                 WHERE student_id=? ORDER BY date DESC""", (student_id,))
+    records = c.fetchall()
+    conn.close()
+    return render_template("student.html", records=records)
+
+
+# ---------- Admin ----------
+@app.route("/admin", methods=["GET", "POST"])
+def admin_dashboard():
+    if session.get("role") != "admin":
+        return redirect(url_for("index"))
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        if "add_teacher" in request.form:
+            name = request.form["t_name"]
+            username = request.form["t_username"]
+            password = request.form["t_password"]
+            c.execute("INSERT INTO teachers (name, username, password) VALUES (?, ?, ?)",
+                      (name, username, password))
+            conn.commit()
+
+        if "add_class" in request.form:
+            class_name = request.form["c_name"]
+            teacher_id = request.form["teacher_id"]
+            c.execute("INSERT INTO classes (class_name, teacher_id) VALUES (?, ?)",
+                      (class_name, teacher_id))
+            conn.commit()
+
+        if "add_student" in request.form:
+            name = request.form["s_name"]
+            username = request.form["s_username"]
+            password = request.form["s_password"]
+            class_id = request.form["class_id"]
+            c.execute("INSERT INTO students (name, username, password, class_id) VALUES (?, ?, ?, ?)",
+                      (name, username, password, class_id))
+            conn.commit()
+
+    # fetch for display
+    c.execute("SELECT * FROM teachers")
+    teachers = c.fetchall()
+    c.execute("SELECT * FROM classes")
+    classes = c.fetchall()
+    c.execute("SELECT * FROM students")
+    students = c.fetchall()
+    conn.close()
+
+    return render_template("admin.html", teachers=teachers, classes=classes, students=students)
+
+
+# ---------- Logout ----------
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
+
+# ===============================
+# Run App
+# ===============================
+if __name__ == "__main__":
+    init_db_function()   # ✅ create tables if not exist
     app.run(debug=True)
