@@ -62,10 +62,12 @@ def init_db():
     conn.commit()
     conn.close()
 
-@app.before_first_request
-def setup():
-    if not os.path.exists(DB_PATH):
-        init_db()
+@app.before_request
+def init_db_once():
+    if not hasattr(app, "db_initialized"):
+        init_db_function()
+        app.db_initialized = True
+
 
 # Home/Login Route
 @app.route('/')
