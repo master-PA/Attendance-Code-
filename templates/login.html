@@ -1,37 +1,28 @@
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        role = request.form["role"]
-
-        conn = get_db()
-        c = conn.cursor()
-        user = None
-
-        if role == "admin":
-            c.execute("SELECT * FROM admins WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
-        elif role == "teacher":
-            c.execute("SELECT * FROM teachers WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
-        elif role == "student":
-            c.execute("SELECT * FROM students WHERE username=? AND password=?", (username, password))
-            user = c.fetchone()
-
-        conn.close()
-
-        if user:
-            session["user"] = user[0]
-            session["role"] = role
-            if role == "admin":
-                return redirect(url_for("admin_dashboard"))
-            elif role == "teacher":
-                return redirect(url_for("teacher_dashboard"))
-            elif role == "student":
-                return redirect(url_for("student_dashboard"))
-        else:
-            flash("❌ Invalid credentials. Please try again.")
-            return redirect(url_for("login"))
-
-    return render_template("login.html")
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h3>Login</h3>
+        <form method="post" action="/login">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+            {% for message in messages %}
+                <p style="color:red;">{{ message }}</p>
+            {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+</body>
+</html>
