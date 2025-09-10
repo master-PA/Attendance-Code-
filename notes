@@ -1,0 +1,11 @@
+create a attendance web app in which a code is genrated by the the teacher and it has validity timer (10sec-60sec) the student must enter the code before the timeer runs out
+
+structure-
+login page
+|
+|--(Teacher interface)choose class -- genrate code,select timeer,see attendance,mark attendance manually
+|
+|--(student interface)--enter code,see their attendance
+|
+|--(admin interface)-- add student,add class,add teacher
+
