@@ -121,33 +121,40 @@ def login():
 
 
 # ---------- Teacher ----------
-@app.route("/teacher", methods=["GET", "POST"])
-def teacher_dashboard():
+@app.route("/teacher/view_attendance", methods=["POST"])
+def view_attendance():
     if session.get("role") != "teacher":
         return redirect(url_for("index"))
+
+    class_id = request.form.get("class_id")
+    selected_date = request.form.get("date")
 
     conn = get_db()
     c = conn.cursor()
 
-    teacher_id = session["user"]  # logged-in teacher’s ID
-    c.execute("SELECT id, class_name FROM classes WHERE teacher_id=?", (teacher_id,))
+    # Fetch classes again
+    c.execute("SELECT * FROM classes WHERE teacher_id=?", (session["user"],))
     classes = c.fetchall()
 
-    otp_info = None
+    # Fetch attendance
+    c.execute("""SELECT students.name, attendance.status
+                 FROM students
+                 LEFT JOIN attendance ON students.id = attendance.student_id
+                 AND attendance.date = ?
+                 WHERE students.class_id=?""", (selected_date, class_id))
+    records = c.fetchall()
 
-    if request.method == "POST" and "generate_otp" in request.form:
-        class_id = request.form["class"]
-        timer = int(request.form["timer"])
-        code = generate_otp()
-        expires_at = datetime.datetime.now() + datetime.timedelta(seconds=timer)
-
-        c.execute("INSERT INTO otps (class_id, code, expires_at) VALUES (?, ?, ?)",
-                  (class_id, code, expires_at))
-        conn.commit()
-        otp_info = {"code": code, "expires_at": expires_at}
+    # Get class name
+    c.execute("SELECT class_name FROM classes WHERE id=?", (class_id,))
+    class_name = c.fetchone()[0]
 
     conn.close()
-    return render_template("teacher.html", classes=classes, otp_info=otp_info)
+    return render_template("teacher.html",
+                           classes=classes,
+                           attendance_records=records,
+                           selected_class_name=class_name,
+                           selected_date=selected_date,
+                           today=datetime.date.today().isoformat())
     
 # ---------- Student ----------
 @app.route("/student", methods=["GET", "POST"])
