@@ -229,11 +229,11 @@ def student_dashboard():
                 c.execute("INSERT INTO attendance (student_id, class_id, date, status) VALUES (?, ?, ?, ?)",
                           (student_id, class_id, today, "Present"))
                 conn.commit()
-                flash("Attendance marked successfully!")
+                flash("Attendance marked successfully!","success")
             else:
-                flash("OTP expired!")
+                flash("OTP expired!","error")
         else:
-            flash("Invalid OTP!")
+            flash("Invalid OTP!","error")
 
     # show attendance history
     c.execute("""SELECT date, status FROM attendance 
