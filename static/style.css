@@ -1,119 +1,203 @@
-/* Global Styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f7fa;
+    font-family: sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to right, #0a113a, #0b1a51); /* Deep blue background */
+    overflow: hidden; /* Hide overflow from the pseudo-elements */
+    position: relative;
+    color: #fff;
 }
 
-h1, h2, h3, h4 {
-    font-weight: 600;
-    color: #444;
+/* Background shapes with pseudo-elements */
+body::before,
+body::after {
+    content: '';
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    filter: blur(50px);
+    z-index: 1; /* Keep them behind the main card */
 }
 
-h3 {
-    margin-top: 0;
+body::before {
+    top: 10%;
+    left: 15%;
+    animation: move1 10s infinite alternate;
 }
 
-/* Card Style */
-.card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-bottom: 20px;
+body::after {
+    bottom: 15%;
+    right: 20%;
+    animation: move2 12s infinite alternate;
 }
 
-.card input, .card select, .card button {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 12px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 16px;
+/* Keyframes for the animation */
+@keyframes move1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(50px, 30px) scale(1.1); }
 }
 
-.card input:focus, .card select:focus, .card button:focus {
-    outline: none;
-    border-color: #0066cc;
+@keyframes move2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-40px, -20px) scale(1.2); }
 }
 
-/* Button Styles */
-button {
-    background-color: #0066cc;
+/* Login card styling */
+.container {
+    position: relative;
+    z-index: 10; /* Bring container to the front */
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.1); /* Semi-transparent white background */
+    backdrop-filter: blur(20px); /* The key glassmorphism property */
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 40px 30px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     color: white;
-    cursor: pointer;
-    border: none;
-    font-size: 16px;
 }
 
-button:hover {
-    background-color: #005bb5;
-}
-
-/* Form Container */
-form {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-/* Login Page */
-form input[type="text"],
-form input[type="password"] {
-    width: calc(100% - 20px);
-    padding: 10px;
-}
-
-/* Alerts */
-.flash {
-    padding: 15px;
-    margin-bottom: 20px;
-    background-color: #ffcc00;
-    border-radius: 5px;
-    color: #333;
-    font-size: 16px;
-}
-
-/* Select Boxes and Inputs */
-select, input[type="text"], input[type="password"], input[type="number"] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
-
-/* Table Style for Teacher Dashboard */
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-table th, table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-table th {
-    background-color: #f7f7f7;
-}
-
-/* Flash Messages */
-.flash {
-    padding: 10px;
-    margin-top: 20px;
-    background-color: #f44336;
-    color: white;
-    text-align: center;
-    border-radius: 5px;
-}
-
-/* Countdown Timer */
-#countdown {
+.logo {
+    font-size: 1.5rem;
     font-weight: bold;
-    color: #e91e63;
-    font-size: 20px;
+    margin-bottom: 5px;
+    align-self: flex-start;
+}
+
+h2 {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin: 0 0 30px;
+    align-self: flex-start;
+}
+
+/* Form inputs and buttons */
+.input-group {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    box-sizing: border-box; /* Ensures padding doesn't affect the width */
+}
+
+.input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.forgot-password {
+    width: 100%;
+    text-align: right;
+    margin-bottom: 25px;
+}
+
+.forgot-password a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.sign-in-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff; /* A nice blue color for the button */
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.sign-in-button:hover {
+    background-color: #0056b3;
+}
+
+/* Social login */
+.social-login {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.social-login p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.social-button {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.social-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.social-button svg {
+    fill: white;
+    width: 20px;
+    height: 20px;
+}
+
+.register {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.register a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.register a:hover {
+    text-decoration: underline;
 }
