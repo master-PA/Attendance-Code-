@@ -9,22 +9,22 @@
 <body>
     <div class="container">
         <h2>Welcome Student</h2>
-        <p>Enter the attendance code (OTP) given by your teacher:</p>
+        <p>Enter the attendance code (UAC) given by your teacher:</p>
 
         <!-- OTP Form -->
         <form method="POST">
-            <input type="text" name="otp" placeholder="Enter OTP" required>
+            <input type="text" name="UAC" placeholder="Enter OTP" required>
             <button type="submit">Submit</button>
         </form>
 
         <!-- Flash Messages -->
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <div class="flash error">
-              {% for message in messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">
                 <p>{{ message }}</p>
-              {% endfor %}
-            </div>
+              </div>
+            {% endfor %}
           {% endif %}
         {% endwith %}
 
