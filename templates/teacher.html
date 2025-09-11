@@ -6,115 +6,57 @@
     <title>Teacher Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
-    <div class="card">
-        <h2>Teacher Dashboard</h2>
-        <a href="/logout"><button>Logout</button></a>
-    </div>
+<div class="container">
+    <h2>Welcome Teacher</h2>
 
     <!-- Flash Messages -->
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flash">
-            {% for message in messages %}
-                <p style="color:red;">{{ message }}</p>
-            {% endfor %}
-        </div>
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            <p>{{ message }}</p>
+          </div>
+        {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <!-- OTP Section -->
-    <div class="card">
-        <h3>Generate UAC</h3>
-        <form method="post" action="/teacher">
-            <label>Select Class:</label>
-            <select name="class" required>
-                {% for class in classes %}
-                    <option value="{{ class[0] }}">{{ class[1] }}</option>
-                {% endfor %}
-            </select>
-            <label>Timer (seconds):</label>
-            <input type="number" name="timer" min="10" max="60" required>
-            <button type="submit" name="generate_otp">Generate UAC</button>
-        </form>
+    <h3>Your Classes</h3>
+    {% if classes %}
+        <ul style="list-style:none; padding:0;">
+            {% for class_id, class_name in classes %}
+            <li style="margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:10px;">
 
-        {% if otp_info %}
-            <p><b>UAC Code:</b> {{ otp_info.code }}</p>
-            <p><b>Expires At:</b> {{ otp_info.expires_at }}</p>
-        {% endif %}
-    </div>
+                <strong>{{ class_name }}</strong><br><br>
 
-    <!-- Manual Attendance Section -->
-    <div class="card">
-        <h3>Mark Attendance Manually</h3>
-        <form method="post" action="/teacher/mark_attendance">
-            <label>Select Class:</label>
-            <select name="class_id" required onchange="this.form.submit()">
-                <option value="">-- Select Class --</option>
-                {% for class in classes %}
-                    <option value="{{ class[0] }}"
-                        {% if selected_class and selected_class == class[0] %}selected{% endif %}>
-                        {{ class[1] }}
-                    </option>
-                {% endfor %}
-            </select>
-        </form>
+                <!-- Generate OTP Form -->
+                <form method="POST" action="{{ url_for('generate_otp', class_id=class_id) }}" style="margin-bottom:10px;">
+                    <label>Set OTP Validity (seconds):</label>
+                    <input type="number" name="duration" min="10" max="60" value="30" required>
+                    <button type="submit">Generate OTP</button>
+                </form>
 
-        {% if students %}
-        <form method="post" action="/teacher/save_attendance">
-            <input type="hidden" name="class_id" value="{{ selected_class }}">
-            <table>
-                <tr>
-                    <th>Student</th>
-                    <th>Status</th>
-                </tr>
-                {% for student in students %}
-                <tr>
-                    <td>{{ student[1] }}</td>
-                    <td>
-                        <select name="status_{{ student[0] }}">
-                            <option value="Present">Present</option>
-                            <option value="Absent">Absent</option>
-                        </select>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-            <button type="submit">Save Attendance</button>
-        </form>
-        {% endif %}
-    </div>
+                <!-- Manual Attendance Button -->
+                <a href="{{ url_for('manual_attendance', class_id=class_id) }}">
+                    <button style="background:#3498db;">Mark Attendance Manually</button>
+                </a>
 
-    <!-- View Attendance Section -->
-    <div class="card">
-        <h3>View Attendance</h3>
-        <form method="post" action="/teacher/view_attendance">
-            <label>Select Class:</label>
-            <select name="class_id" required>
-                {% for class in classes %}
-                    <option value="{{ class[0] }}">{{ class[1] }}</option>
-                {% endfor %}
-            </select>
-            <label>Date:</label>
-            <input type="date" name="date" value="{{ today }}" required>
-            <button type="submit">View</button>
-        </form>
-
-        {% if attendance_records %}
-        <h4>Attendance for {{ selected_class_name }} on {{ selected_date }}</h4>
-        <table>
-            <tr>
-                <th>Student</th>
-                <th>Status</th>
-            </tr>
-            {% for record in attendance_records %}
-            <tr>
-                <td>{{ record[0] }}</td>
-                <td>{{ record[1] }}</td>
-            </tr>
+                <!-- View Attendance Button -->
+                <a href="{{ url_for('view_attendance', class_id=class_id) }}">
+                    <button style="background:#2ecc71;">View Attendance</button>
+                </a>
+            </li>
             {% endfor %}
-        </table>
-        {% endif %}
-    </div>
+        </ul>
+    {% else %}
+        <p>No classes assigned to you yet.</p>
+    {% endif %}
+
+    <br>
+    <a href="{{ url_for('logout') }}">
+        <button style="background:#e74c3c;">Logout</button>
+    </a>
+</div>
 </body>
 </html>
