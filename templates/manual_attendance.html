@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Manual Attendance</h2>
+        <form method="POST">
+            <label for="date">Select Date:</label>
+            <input type="date" name="date" value="{{ now().date() }}" required><br><br>
+
+            <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse: collapse;">
+                <tr style="background:#4facfe; color:#fff;">
+                    <th>Student</th>
+                    <th>Present</th>
+                    <th>Absent</th>
+                </tr>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student[1] }}</td>
+                    <td><input type="radio" name="status_{{ student[0] }}" value="Present" checked></td>
+                    <td><input type="radio" name="status_{{ student[0] }}" value="Absent"></td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <br>
+            <button type="submit">Save Attendance</button>
+        </form>
+        <br>
+        <a href="{{ url_for('teacher_dashboard') }}"><button>Back</button></a>
+    </div>
+</body>
+</html>
