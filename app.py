@@ -112,7 +112,8 @@ def login():
 
     flash("Invalid credentials")
     return redirect(url_for("index"))
-
+    
+# ---------- Teacher ----------
 @app.route("/teacher", methods=["GET", "POST"])
 def teacher_dashboard():
     if session.get("role") != "teacher":
@@ -142,7 +143,35 @@ def teacher_dashboard():
     return render_template("teacher.html", classes=classes, otp_info=otp_info)
 
 
-# ---------- Teacher ----------
+@app.route("/manual_attendance/<int:class_id>", methods=["GET", "POST"])
+def manual_attendance(class_id):
+    if session.get("role") != "teacher":
+        return redirect(url_for("index"))
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Get class students
+    c.execute("SELECT id, username FROM users WHERE role='student' AND class_id=?", (class_id,))
+    students = c.fetchall()
+
+    if request.method == "POST":
+        date = request.form.get("date") or datetime.date.today().isoformat()
+        for student in students:
+            student_id = student[0]
+            status = request.form.get(f"status_{student_id}", "Absent")
+            c.execute(
+                "INSERT INTO attendance (student_id, class_id, date, status) VALUES (?, ?, ?, ?)",
+                (student_id, class_id, date, status),
+            )
+        conn.commit()
+        conn.close()
+        flash("Manual attendance marked successfully!", "success")
+        return redirect(url_for("teacher_dashboard"))
+
+    conn.close()
+    return render_template("manual_attendance.html", students=students, class_id=class_id)
+
 @app.route("/teacher/view_attendance", methods=["POST"])
 def view_attendance():
     if session.get("role") != "teacher":
