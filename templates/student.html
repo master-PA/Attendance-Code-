@@ -20,9 +20,9 @@
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages() %}
           {% if messages %}
-            <div class="flash">
+            <div class="flash error">
               {% for message in messages %}
-                <p style="color:red;">{{ message }}</p>
+                <p>{{ message }}</p>
               {% endfor %}
             </div>
           {% endif %}
