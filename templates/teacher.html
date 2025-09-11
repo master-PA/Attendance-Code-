@@ -25,7 +25,7 @@
 
     <!-- OTP Section -->
     <div class="card">
-        <h3>Generate OTP</h3>
+        <h3>Generate UAC</h3>
         <form method="post" action="/teacher">
             <label>Select Class:</label>
             <select name="class" required>
@@ -39,7 +39,7 @@
         </form>
 
         {% if otp_info %}
-            <p><b>OTP Code:</b> {{ otp_info.code }}</p>
+            <p><b>UAC Code:</b> {{ otp_info.code }}</p>
             <p><b>Expires At:</b> {{ otp_info.expires_at }}</p>
         {% endif %}
     </div>
