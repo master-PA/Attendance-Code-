@@ -7,13 +7,52 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="card">
-        <h3>Enter OTP</h3>
-        <form method="post">
-            
-            <input type="text" name="otp" placeholder="OTP" required>
+    <div class="container">
+        <h2>Welcome Student</h2>
+        <p>Enter the attendance code (OTP) given by your teacher:</p>
+
+        <!-- OTP Form -->
+        <form method="POST">
+            <input type="text" name="otp" placeholder="Enter OTP" required>
             <button type="submit">Submit</button>
         </form>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="flash">
+              {% for message in messages %}
+                <p style="color:red;">{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <hr>
+
+        <!-- Attendance History -->
+        <h3>Your Attendance History</h3>
+        {% if records %}
+            <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-radius:8px; border-collapse: collapse;">
+                <tr style="background:#4facfe; color:#fff;">
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+                {% for date, status in records %}
+                <tr>
+                    <td>{{ date }}</td>
+                    <td>{{ status }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No attendance records found.</p>
+        {% endif %}
+
+        <br>
+        <a href="{{ url_for('logout') }}">
+            <button style="background:#e74c3c;">Logout</button>
+        </a>
     </div>
 </body>
 </html>
